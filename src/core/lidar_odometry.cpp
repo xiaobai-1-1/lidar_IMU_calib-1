@@ -41,7 +41,7 @@ LiDAROdometry::ndtInit(double ndt_resolution) {
   ndt_omp->setMaximumIterations(50);
   return ndt_omp;
 }
-
+//增量式更新点云地图map_cloud_
 void LiDAROdometry::feedScan(double timestamp,
                              VPointCloud::Ptr cur_scan,
                              Eigen::Matrix4d pose_predict,
@@ -63,7 +63,7 @@ void LiDAROdometry::feedScan(double timestamp,
     updateKeyScan(cur_scan, odom_cur);
   }
 }
-
+//ndt配准 pose_out在这里即为当前帧到map系的变换矩阵
 void LiDAROdometry::registration(const VPointCloud::Ptr& cur_scan,
                                  const Eigen::Matrix4d& pose_predict,
                                  Eigen::Matrix4d& pose_out,
@@ -76,7 +76,7 @@ void LiDAROdometry::registration(const VPointCloud::Ptr& cur_scan,
 
   pose_out = ndt_omp_->getFinalTransformation().cast<double>();
 }
-
+//关键帧更新
 void LiDAROdometry::updateKeyScan(const VPointCloud::Ptr& cur_scan,
                                   const OdomData& odom_data) {
   if (checkKeyScan(odom_data)) {
@@ -92,7 +92,7 @@ void LiDAROdometry::updateKeyScan(const VPointCloud::Ptr& cur_scan,
     key_frame_index_.push_back(odom_data_.size());
   }
 }
-
+//关键帧判断 位移>0.2或者任一角度旋转值>5°
 bool LiDAROdometry::checkKeyScan(const OdomData& odom_data) {
   static Eigen::Vector3d position_last(0,0,0);
   static Eigen::Vector3d ypr_last(0,0,0);
