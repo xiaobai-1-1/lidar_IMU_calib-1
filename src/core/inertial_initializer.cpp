@@ -22,7 +22,7 @@
 #include <utils/math_utils.h>
 
 namespace licalib {
-
+//OdomData： 时间戳+位姿矩阵   Eigen::aligned_vector<T> 模板函数 定义一个容器
 bool InertialInitializer::EstimateRotation(
         TrajectoryManager::Ptr traj_manager,
         const Eigen::aligned_vector<LiDAROdometry::OdomData>& odom_data) {
@@ -38,20 +38,20 @@ bool InertialInitializer::EstimateRotation(
     double tj = odom_data.at(j).timestamp;
     if (tj >= p_traj->MaxTime())
       break;
-    auto result_i = p_traj->Evaluate(ti, flags);
+    auto result_i = p_traj->Evaluate(ti, flags);  //带入样条曲线，计算ti时刻的样条值
     auto result_j = p_traj->Evaluate(tj, flags);
     Eigen::Quaterniond delta_qij_imu = result_i->orientation.conjugate()
-                                       * result_j->orientation;
+                                       * result_j->orientation;  //ti和tj时刻的imu姿态变化
 
     Eigen::Matrix3d R_Si_toS0 = odom_data.at(i).pose.topLeftCorner<3,3>();
     Eigen::Matrix3d R_Sj_toS0 = odom_data.at(j).pose.topLeftCorner<3,3>();
-    Eigen::Matrix3d delta_ij_sensor = R_Si_toS0.transpose() * R_Sj_toS0;
+    Eigen::Matrix3d delta_ij_sensor = R_Si_toS0.transpose() * R_Sj_toS0; //ti和tj时刻的lidar姿态变化
     Eigen::Quaterniond delta_qij_sensor(delta_ij_sensor);
 
     Eigen::AngleAxisd R_vector1(delta_qij_sensor.toRotationMatrix());
     Eigen::AngleAxisd R_vector2(delta_qij_imu.toRotationMatrix());
     double delta_angle = 180 / M_PI * std::fabs(R_vector1.angle() - R_vector2.angle());
-    double huber = delta_angle > 1.0 ? 1.0/delta_angle : 1.0;
+    double huber = delta_angle > 1.0 ? 1.0/delta_angle : 1.0;           //huber函数，抑制异常值
 
     Eigen::Matrix4d lq_mat = mathutils::LeftQuatMatrix(delta_qij_sensor);
     Eigen::Matrix4d rq_mat = mathutils::RightQuatMatrix(delta_qij_imu);
@@ -68,8 +68,8 @@ bool InertialInitializer::EstimateRotation(
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
   Eigen::Matrix<double, 4, 1> x = svd.matrixV().col(3);
-  Eigen::Quaterniond q_ItoS_est(x);
-  Eigen::Vector4d cov = svd.singularValues();
+  Eigen::Quaterniond q_ItoS_est(x);             //svd求解得到imu到lidar的旋转初值，作为初始估计值
+  Eigen::Vector4d cov = svd.singularValues();   //计算第二个最小奇异值，大于阈值0.25，则认为初始化成功
 
   if (cov(2) > 0.25) {
     q_ItoS_est_ = q_ItoS_est;
