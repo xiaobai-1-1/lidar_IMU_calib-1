@@ -46,7 +46,7 @@ void SurfelAssociation::clearSurfelMap() {
   surfels_map_.clear();
   spoints_all_.clear();
 }
-
+//输入一个ndt_omp对象  ndtPtr; 但这个ndtPtr->getTargetCells() 得到的是什么玩意？
 void SurfelAssociation::setSurfelMap(
         const pclomp::NormalDistributionsTransform<VPoint, VPoint>::Ptr& ndtPtr,
         double timestamp) {
@@ -58,7 +58,7 @@ void SurfelAssociation::setSurfelMap(
   // check each cell
   Eigen::Vector3i counter(0,0,0);
   for (const auto &v : ndtPtr->getTargetCells().getLeaves()) {
-    auto leaf = v.second;   //ndtPtr中的 第二个leaf
+    auto leaf = v.second;   //ndtPtr中的 第二个leaf  TODO 这个leaf中点云是怎么分布的？ voxel体素滤波的话，应该是八叉树的leaf
 
     if (leaf.nr_points < 10)  //nr_points：voxel中的点云个数
       continue;
@@ -91,6 +91,7 @@ void SurfelAssociation::setSurfelMap(
   std::cout << "Plane type  :" << counter.transpose()
             << "; Plane number: " << surfel_planes_.size() << std::endl;
 
+  //上色
   surfels_map_.clear();
   {
     int idx = 0;
@@ -248,6 +249,7 @@ double SurfelAssociation::point2PlaneDistance(Eigen::Vector3d &pt,
   return dist;
 }
 
+  //lidar的扫描帧 scan 与 surfel进行数据关联  lidar帧与map帧（及surfelmap）转换到同一坐标系，之后比较lidar帧内所有点到 指定surfels（该帧范围内）的距离，小于阈值则进行数据关联。
 void SurfelAssociation::associateScanToSurfel(
         const size_t& surfel_idx,
         const VPointCloud::Ptr& scan,
