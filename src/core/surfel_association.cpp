@@ -58,11 +58,11 @@ void SurfelAssociation::setSurfelMap(
   // check each cell
   Eigen::Vector3i counter(0,0,0);
   for (const auto &v : ndtPtr->getTargetCells().getLeaves()) {
-    auto leaf = v.second;
+    auto leaf = v.second;   //ndtPtr中的 第二个leaf
 
-    if (leaf.nr_points < 10)
+    if (leaf.nr_points < 10)  //nr_points：voxel中的点云个数
       continue;
-    int plane_type = checkPlaneType(leaf.getEvals(), leaf.getEvecs(), p_lambda_);
+    int plane_type = checkPlaneType(leaf.getEvals(), leaf.getEvecs(), p_lambda_); //getEvals:得到体素协方差的特征值  getEevecs:得到体素协方差的特征向量
     if (plane_type < 0)
       continue;
 
@@ -187,7 +187,8 @@ void SurfelAssociation::averageTimeDownSmaple(int step) {
     spoint_downsampled_.push_back(spoints_all_.at(idx));
   }
 }
-
+  //类似于点云PCA主成分分析。 对应点云坐标的协方差矩阵的最小特征值对应的特征向量（SVD分解求解）
+//检查平面类型 输入协方差阵的特征向量、特征值、以及平面相似系数阈值 若计算的系数大于阈值，则说明可以拟合平面
 int SurfelAssociation::checkPlaneType(const Eigen::Vector3d& eigen_value,
                                       const Eigen::Matrix3d& eigen_vector,
                                       const double& p_lambda) {
@@ -209,7 +210,7 @@ int SurfelAssociation::checkPlaneType(const Eigen::Vector3d& eigen_value,
   Eigen::sort_vec(plane_normal, sorted_vec, ind);
   return ind[2];
 }
-
+//拟合平面  输入点云cloud 拟合平面参数coeffs  平面内点cloud_inliers
 bool SurfelAssociation::fitPlane(const VPointCloud::Ptr& cloud,
                                  Eigen::Vector4d &coeffs,
                                  VPointCloud::Ptr cloud_inliers) {
@@ -237,7 +238,7 @@ bool SurfelAssociation::fitPlane(const VPointCloud::Ptr& cloud,
   pcl::copyPointCloud<VPoint> (*cloud, *inliers, *cloud_inliers);
   return true;
 }
-
+//点到面距离
 double SurfelAssociation::point2PlaneDistance(Eigen::Vector3d &pt,
                                               Eigen::Vector4d &plane_coeff) {
   Eigen::Vector3d normal = plane_coeff.head<3>();
